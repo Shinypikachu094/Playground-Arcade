@@ -310,3 +310,4 @@ function loop(now){const dt=Math.min(.033,(now-last)/1000||0);last=now;updateMap
 
 
 
+<script>(function(){const keep=['pauseBtn','modeBtn','prevTerritoryBtn','territoryBtn','nextTerritoryBtn','conquerBtn','horseBtn','settingsBtn','buyTroopBtn','upgradeRecruitBtn','upgradeWallsBtn','repairWallsBtn','mineBtn','shopBtn','scoresBtn'];['buyShieldBtn','placeTroopBtn','buildBlockBtn','upgradeBlocksBtn','upgradeMinesBtn','leftBowBtn','rightBowBtn','mergeBtn','frontBtn','middleBtn','backBtn','skinBtn','upgradeBtn'].forEach(id=>{const el=document.getElementById(id);if(el&&!keep.includes(id))el.style.display='none';});const shop=document.getElementById('shopBtn');if(shop){shop.style.display='inline-block';shop.style.background='#ffe066';shop.style.fontSize='1.05em';}})();</script>
