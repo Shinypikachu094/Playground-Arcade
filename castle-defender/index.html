@@ -105,7 +105,7 @@ const CONFIG={
   horseSpawnMs:250, // Horse compounds send charges rapidly with no long cooldown.
   horsemenPerCompound:4, // Horsemen sent by each compound.
   horsemanSpeed:380, // Speed of a horse charge.
-  horsemanDamage:45, // Damage dealt by one horseman charge.
+  horsemanDamage:90, // Damage dealt by one horseman charge.
   horseTargetRefreshMs:180, // How often each horse searches for a new target.
   horsemanShots:3, // Each horseman can hit a horde member only three times.
   enemyStreamRate:22, // Mobs added every second during an active wave.
@@ -179,7 +179,7 @@ maxActiveEnemies:45, maxFriendlyBullets:260, // Keeps the endless horde readable
   startingShields:3, // Shield troops protecting the squad at the start of a territory.
   shieldCost:30, // Coins needed to replace one broken shield troop.
   shieldMaxHealth:360, // Health of each shield before its troop falls.
-  shieldDamageMultiplier:.03, // Small per-contact damage prevents crowded hordes from deleting shields instantly.
+  shieldDamageMultiplier:.001, // Very small per-contact damage lets shields survive large crowds while remaining breakable.
   fallenTroopLifeMs:Infinity, // Fallen troops stay on the road until the run ends.
   knifeDamageBonus:30, // Strong front-row knight damage; normal hordes fall in one hit.
   mageDamageBonus:4, // Extra damage from back-row mage troops.
