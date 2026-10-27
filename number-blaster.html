@@ -1,57 +1,46 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>Number Blaster</title>
-  <style>
-    :root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;min-height:100%;overflow:hidden;background:#172033;font-family:Inter,system-ui,sans-serif;touch-action:none}body{display:grid;place-items:center}.wrap{width:min(100vw,900px);height:100vh;display:grid;grid-template-rows:auto 1fr auto;background:linear-gradient(#9ed0da 0 12%,#d8b47a 12% 100%);position:relative}.hud{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;background:#172033;color:#fff;font-weight:900}.hud span{padding:7px 10px;border-radius:10px;background:#293b4d}.hud button,.overlay button{border:0;border-radius:10px;padding:8px 13px;background:#ffe066;color:#172033;font:inherit;font-weight:950;cursor:pointer}.stage{position:relative;min-height:0}.stage canvas{display:block;width:100%;height:100%;background:#d8b47a}.hint{text-align:center;padding:8px;background:#172033;color:#fff;font-size:13px;font-weight:750}.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#101827aa}.panel{width:min(88%,440px);padding:28px;border:4px solid #172033;border-radius:24px;background:#fff5dc;color:#172033;text-align:center;box-shadow:0 12px 0 #172033}.panel h1{margin:0 0 10px;font-size:clamp(28px,7vw,52px)}.panel p{margin:8px 0 20px;line-height:1.45}.hidden{display:none!important}@media(max-width:560px){.hud{font-size:12px;padding:8px;gap:5px}.hud span{padding:6px}.hud span:nth-child(3){display:none}.hint{font-size:11px}}
-  </style>
-</head>
-<body>
-<main class="wrap">
-  <div class="hud"><span>Score: <b id="score">0</b></span><span>Best: <b id="best">0</b></span><span>Power: <b id="power">1</b></span><button id="pause">Pause</button></div>
-  <div class="stage"><canvas id="game" aria-label="Number Blaster game"></canvas><section id="overlay" class="overlay hidden"><div class="panel"><h1 id="title">Number Blaster</h1><p id="message"></p><button id="playAgain">Play Again</button></div></section></div>
-  <div class="hint">Move with A/D or ◀/▶ · Tap or drag on phones · Shoot the numbered crates</div>
-</main>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Number Blaster Run</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;touch-action:none;font-family:Inter,system-ui,sans-serif;background:#203044}body{display:grid;place-items:center}.game{width:min(100vw,900px);height:100vh;position:relative;background:#87cbbd}.hud{height:54px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:#172033;color:white;font-weight:900;z-index:2}.pill{padding:7px 10px;border-radius:9px;background:#293b4d}.hud button,.card button{border:0;border-radius:9px;padding:8px 14px;background:#ffe066;color:#172033;font:inherit;font-weight:950}.stage{position:absolute;top:54px;bottom:34px;left:0;right:0}.stage canvas{width:100%;height:100%;display:block}.tip{position:absolute;bottom:0;left:0;right:0;height:34px;padding:8px;text-align:center;background:#172033;color:white;font-size:12px;font-weight:800}.modal{position:absolute;inset:0;display:grid;place-items:center;background:#101827aa;z-index:4}.card{width:min(88%,430px);padding:28px;border:4px solid #172033;border-radius:22px;background:#fff5dc;color:#172033;text-align:center;box-shadow:0 10px 0 #172033}.card h1{margin:0 0 8px;font-size:clamp(30px,8vw,54px)}.card p{line-height:1.45;margin:9px 0 20px}.hide{display:none!important}@media(max-width:560px){.hud{font-size:12px;padding:7px}.pill{padding:6px}.hud .pill:nth-child(3){display:none}}
+</style></head>
+<body><main class="game"><div class="hud"><span class="pill">Score: <b id="score">0</b></span><span class="pill">Squad: <b id="squad">1</b></span><span class="pill">Road: <b id="road">0m</b></span><button id="pause">Pause</button></div><div class="stage"><canvas id="canvas"></canvas></div><div class="tip">A/D or ◀/▶ to move · Tap and drag to steer · Shoot the numbered barrels</div><section id="modal" class="modal"><div class="card"><h1 id="title">Number Blaster Run</h1><p id="copy">Run up the road, shoot the numbered barrels, and grow your squad. Each bullet lowers a barrel's number.</p><button id="start">Start Run</button></div></section></main>
 <script>
 const CONFIG={
-  playerSpeed:420, // Player movement speed.
-  bulletSpeed:560, // Bullet travel speed.
-  fireEvery:260, // Time between player shots.
-  spawnEvery:850, // Time between new crates.
-  crateSpeed:58, // Starting crate speed.
-  crateHealth:3, // Starting crate number.
-  healthGrowth:0.18, // Extra crate health over time.
-  speedGrowth:0.018, // Extra crate speed over time.
-  maxCrates:18, // Performance guard.
-  hitScore:5, // Score for damaging a crate.
-  breakScore:25, // Score for breaking a crate.
-  boostEvery:9000, // Time between power boosts.
-  boostPower:1 // Power added by a boost.
+  runnerSpeed:115, // How quickly the road moves toward the player.
+  playerSpeed:430, // Side-to-side movement speed.
+  bulletSpeed:620, // Speed of each shot.
+  fireEvery:230, // Automatic fire interval.
+  targetEvery:700, // Time between target rows.
+  targetStart:3, // Starting number on wooden targets.
+  targetGrowth:.10, // Target number growth as the run continues.
+  targetSpeed:72, // Target movement toward the player.
+  maxTargets:24, // Performance limit.
+  targetWidth:74, // Barrel width.
+  hitPoints:5, // Points for each hit.
+  breakPoints:30, // Points for breaking a barrel.
+  squadPerBreak:1 // Squad members earned from a broken barrel.
 };
-const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),scoreEl=document.querySelector('#score'),bestEl=document.querySelector('#best'),powerEl=document.querySelector('#power'),pauseBtn=document.querySelector('#pause'),overlay=document.querySelector('#overlay'),titleEl=document.querySelector('#title'),messageEl=document.querySelector('#message'),playAgain=document.querySelector('#playAgain');
-let W=900,H=700,dpr=1,last=0,running=false,paused=false,score=0,best=Number(localStorage.getItem('numberBlasterBest')||0),power=1,elapsed=0,spawnTimer=0,fireTimer=0,boostTimer=0,keys={},crates=[],bullets=[],boosts=[],player={x:450,y:620,r:18};
-bestEl.textContent=best;
-function fit(){const box=canvas.getBoundingClientRect();dpr=Math.min(2,devicePixelRatio||1);W=box.width;H=box.height;canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);player.y=H-62;player.x=Math.max(24,Math.min(W-24,player.x));}
-function reset(){score=0;power=1;elapsed=0;spawnTimer=0;fireTimer=0;boostTimer=CONFIG.boostEvery;crates=[];bullets=[];boosts=[];player.x=W/2;running=true;paused=false;pauseBtn.textContent='Pause';overlay.classList.add('hidden');hud();}
-function hud(){scoreEl.textContent=score;bestEl.textContent=best;powerEl.textContent=power;}
-function spawnCrate(){if(crates.length>=CONFIG.maxCrates)return;const lane=Math.floor(Math.random()*5),x=W*(.12+lane*.19),hp=Math.max(2,Math.floor(CONFIG.crateHealth+elapsed/1000*CONFIG.healthGrowth+Math.random()*3));crates.push({x,y:-38,w:70,h:52,hp,maxHp:hp,speed:CONFIG.crateSpeed+elapsed/1000*CONFIG.speedGrowth*100});}
-function shoot(){bullets.push({x:player.x,y:player.y-20,r:5,vy:-CONFIG.bulletSpeed});if(bullets.length>80)bullets.splice(0,20);}
-function end(){running=false;if(score>best){best=score;localStorage.setItem('numberBlasterBest',best)}titleEl.textContent='Run Over';messageEl.textContent=`You scored ${score}. Break more crates and try to beat your best score.`;overlay.classList.remove('hidden');hud();}
-function update(dt){if(!running||paused)return;elapsed+=dt*1000;spawnTimer-=dt*1000;fireTimer-=dt*1000;boostTimer-=dt*1000;if(spawnTimer<=0){spawnTimer=CONFIG.spawnEvery/Math.min(2.2,1+elapsed/30000);spawnCrate()}if(fireTimer<=0){fireTimer=CONFIG.fireEvery/Math.min(2,1+power*.08);shoot()}if(boostTimer<=0){boostTimer=CONFIG.boostEvery;boosts.push({x:35+Math.random()*(W-70),y:-30,r:14})}
-  const dir=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0);player.x=Math.max(25,Math.min(W-25,player.x+dir*CONFIG.playerSpeed*dt));
-  for(const b of bullets)b.y+=b.vy*dt;bullets=bullets.filter(b=>b.y>-30);
-  for(const c of crates){c.y+=c.speed*dt;if(c.y+c.h/2>player.y-15&&Math.abs(c.x-player.x)<42){end();return}}
-  for(const b of bullets)for(const c of crates)if(!b.hit&&!c.hit&&Math.abs(b.x-c.x)<c.w/2&&Math.abs(b.y-c.y)<c.h/2){b.hit=true;c.hp-=power;score+=CONFIG.hitScore;if(c.hp<=0){c.hit=true;score+=CONFIG.breakScore;}}
-  crates=crates.filter(c=>!c.hit&&c.y<H+70);for(const p of boosts)p.y+=CONFIG.crateSpeed*dt*.8;for(const p of boosts)if(Math.hypot(p.x-player.x,p.y-player.y)<30){p.hit=true;power+=CONFIG.boostPower;score+=15}boosts=boosts.filter(p=>!p.hit&&p.y<H+30);hud();}
-function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#d8b47a';ctx.fillRect(0,0,W,H);ctx.fillStyle='#c69a60';for(let x=0;x<W;x+=90){ctx.fillRect(x,0,3,H);ctx.fillRect(x+42,0,2,H)}ctx.fillStyle='#9e774b';ctx.fillRect(0,H-35,W,35);for(let x=25;x<W;x+=75){ctx.fillStyle='#6b4328';ctx.fillRect(x,H-30,6,25)}
-  for(const p of boosts){ctx.fillStyle='#ffe066';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#172033';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText('+',p.x,p.y+6)}
-  for(const c of crates){ctx.save();ctx.translate(c.x,c.y);ctx.fillStyle='#70462d';ctx.strokeStyle='#342416';ctx.lineWidth=4;ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h);ctx.strokeRect(-c.w/2,-c.h/2,c.w,c.h);ctx.fillStyle='#fff5dc';ctx.font='bold 28px system-ui';ctx.textAlign='center';ctx.fillText(c.hp,0,10);ctx.restore();ctx.fillStyle='#172033';ctx.fillRect(c.x-c.w/2,c.y-c.h/2-10,c.w,5);ctx.fillStyle='#55d66b';ctx.fillRect(c.x-c.w/2,c.y-c.h/2-10,c.w*Math.max(0,c.hp/c.maxHp),5)}
-  for(const b of bullets){ctx.fillStyle='#fff4bd';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();}
-  ctx.save();ctx.translate(player.x,player.y);ctx.fillStyle='#12b886';ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ff5c62';ctx.fillRect(-10,-10,20,16);ctx.fillStyle='#172033';ctx.fillRect(-5,-28,10,22);ctx.restore();}
+const canvas=document.querySelector('#canvas'),ctx=canvas.getContext('2d'),scoreEl=document.querySelector('#score'),squadEl=document.querySelector('#squad'),roadEl=document.querySelector('#road'),pauseBtn=document.querySelector('#pause'),modal=document.querySelector('#modal'),title=document.querySelector('#title'),copy=document.querySelector('#copy'),start=document.querySelector('#start');
+let W=900,H=700,dpr=1,last=0,running=false,paused=false,score=0,squad=1,road=0,spawnTimer=0,fireTimer=0,keys={},shots=[],targets=[],sparkles=[],player={x:450,y:0};
+function fit(){const r=canvas.getBoundingClientRect();W=r.width;H=r.height;dpr=Math.min(2,devicePixelRatio||1);canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);player.y=H-80;player.x=Math.max(26,Math.min(W-26,player.x||W/2))}
+function reset(){score=0;squad=1;road=0;spawnTimer=200;fireTimer=0;shots=[];targets=[];sparkles=[];paused=false;running=true;pauseBtn.textContent='Pause';modal.classList.add('hide');fit();hud()}
+function hud(){scoreEl.textContent=score;squadEl.textContent=squad;roadEl.textContent=Math.floor(road)+'m'}
+function laneX(lane){return W*(.18+lane*.16)}
+function makeRow(){if(targets.length>=CONFIG.maxTargets)return;const start=Math.floor(Math.random()*3),count=2+Math.floor(Math.random()*3),value=Math.max(2,Math.floor(CONFIG.targetStart+road*CONFIG.targetGrowth/10));for(let i=0;i<count;i++){const lane=(start+i)%5;targets.push({x:laneX(lane),y:-60-i*10,n:value+Math.floor(Math.random()*3),max:value+2,w:CONFIG.targetWidth,h:54,hit:false})}}
+function fire(){shots.push({x:player.x,y:player.y-35,vy:-CONFIG.bulletSpeed});if(shots.length>90)shots.splice(0,20)}
+function burst(x,y){for(let i=0;i<8;i++)sparkles.push({x,y,vx:(Math.random()-.5)*100,vy:(Math.random()-.5)*100,life:500})}
+function lose(){running=false;title.textContent='Run Over';copy.textContent=`You reached ${Math.floor(road)}m, scored ${score}, and built a squad of ${squad}.`;start.textContent='Play Again';modal.classList.remove('hide')}
+function update(dt){if(!running||paused)return;road+=CONFIG.runnerSpeed*dt;spawnTimer-=dt*1000;fireTimer-=dt*1000;if(spawnTimer<=0){spawnTimer=CONFIG.targetEvery/Math.min(1.8,1+road/700);makeRow()}if(fireTimer<=0){fireTimer=CONFIG.fireEvery;fire()}
+ const dir=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0);player.x=Math.max(28,Math.min(W-28,player.x+dir*CONFIG.playerSpeed*dt));for(const b of shots)b.y+=b.vy*dt;shots=shots.filter(b=>b.y>-30);for(const t of targets)t.y+=CONFIG.targetSpeed*dt;for(const t of targets){if(t.y+t.h/2>player.y-35&&Math.abs(t.x-player.x)<45)lose()}
+ for(const b of shots)for(const t of targets)if(!b.hit&&!t.hit&&Math.abs(b.x-t.x)<t.w/2&&Math.abs(b.y-t.y)<t.h/2){b.hit=true;t.n--;score+=CONFIG.hitPoints;burst(b.x,b.y);if(t.n<=0){t.hit=true;score+=CONFIG.breakPoints;squad+=CONFIG.squadPerBreak}}
+ targets=targets.filter(t=>!t.hit&&t.y<H+80);for(const s of sparkles){s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt*1000}sparkles=sparkles.filter(s=>s.life>0);hud()}
+function drawRoad(){ctx.fillStyle='#78bd76';ctx.fillRect(0,0,W,H);ctx.fillStyle='#5b9b61';for(let y=-50+(road%100);y<H;y+=100){ctx.fillRect(20,y,60,12);ctx.fillRect(W-80,y+45,60,12)}ctx.fillStyle='#b98c58';ctx.beginPath();ctx.moveTo(W*.12,0);ctx.lineTo(W*.88,0);ctx.lineTo(W*.70,H);ctx.lineTo(W*.30,H);ctx.closePath();ctx.fill();ctx.strokeStyle='#e8c47d';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(W*.12,0);ctx.lineTo(W*.30,H);ctx.moveTo(W*.88,0);ctx.lineTo(W*.70,H);ctx.stroke();ctx.strokeStyle='#d9b16b';ctx.lineWidth=3;for(let y=40+(road%90);y<H;y+=90){ctx.beginPath();ctx.moveTo(W*.5,y);ctx.lineTo(W*.5,y+42);ctx.stroke()}}
+function drawBarrel(t){ctx.save();ctx.translate(t.x,t.y);ctx.fillStyle='#70462d';ctx.strokeStyle='#302216';ctx.lineWidth=4;ctx.fillRect(-t.w/2,-t.h/2,t.w,t.h);ctx.strokeRect(-t.w/2,-t.h/2,t.w,t.h);ctx.strokeStyle='#bd8b52';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-t.w/2+8,-t.h/2);ctx.lineTo(-t.w/2+8,t.h/2);ctx.moveTo(t.w/2-8,-t.h/2);ctx.lineTo(t.w/2-8,t.h/2);ctx.stroke();ctx.fillStyle='#fff1c7';ctx.font='bold 27px system-ui';ctx.textAlign='center';ctx.fillText(t.n,0,10);ctx.restore()}
+function drawPlayer(){ctx.save();ctx.translate(player.x,player.y);ctx.fillStyle='#17203366';ctx.beginPath();ctx.ellipse(0,25,26,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#16b6a0';ctx.beginPath();ctx.arc(0,-17,13,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffcf43';ctx.fillRect(-13,-4,26,29);ctx.fillStyle='#ef5b67';ctx.fillRect(-10,-1,20,13);ctx.fillStyle='#172033';ctx.fillRect(-5,-38,10,30);ctx.fillStyle='#27364b';ctx.fillRect(-15,24,10,16);ctx.fillRect(5,24,10,16);ctx.restore()}
+function draw(){ctx.clearRect(0,0,W,H);drawRoad();for(const t of targets)drawBarrel(t);for(const b of shots){ctx.strokeStyle='#fff6bd';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x,b.y+18);ctx.stroke()}for(const s of sparkles){ctx.fillStyle='#ffe066';ctx.globalAlpha=Math.max(0,s.life/500);ctx.fillRect(s.x,s.y,4,4)}ctx.globalAlpha=1;drawPlayer()}
 function loop(t){const dt=Math.min(.04,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}
-window.addEventListener('resize',fit);window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();paused=!paused;pauseBtn.textContent=paused?'Resume':'Pause'}});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);pauseBtn.onclick=()=>{if(running){paused=!paused;pauseBtn.textContent=paused?'Resume':'Pause'}};let drag=false;canvas.addEventListener('pointerdown',e=>{drag=true;player.x=e.offsetX});canvas.addEventListener('pointermove',e=>{if(drag)player.x=e.offsetX});window.addEventListener('pointerup',()=>drag=false);playAgain.onclick=reset;fit();reset();requestAnimationFrame(loop);
-</script>
-</body>
-</html>
+window.addEventListener('resize',fit);window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();if(running){paused=!paused;pauseBtn.textContent=paused?'Resume':'Pause'}}});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);pauseBtn.onclick=()=>{if(running){paused=!paused;pauseBtn.textContent=paused?'Resume':'Pause'}};let dragging=false;canvas.addEventListener('pointerdown',e=>{dragging=true;player.x=e.offsetX});canvas.addEventListener('pointermove',e=>{if(dragging)player.x=e.offsetX});window.addEventListener('pointerup',()=>dragging=false);start.onclick=reset;fit();requestAnimationFrame(loop);
+</script></body></html>
