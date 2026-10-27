@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Number Blaster</title>
+  <style>
+    :root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;min-height:100%;overflow:hidden;background:#172033;font-family:Inter,system-ui,sans-serif;touch-action:none}body{display:grid;place-items:center}.wrap{width:min(100vw,900px);height:100vh;display:grid;grid-template-rows:auto 1fr auto;background:linear-gradient(#9ed0da 0 12%,#d8b47a 12% 100%);position:relative}.hud{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 14px;background:#172033;color:#fff;font-weight:900}.hud span{padding:7px 10px;border-radius:10px;background:#293b4d}.hud button,.overlay button{border:0;border-radius:10px;padding:8px 13px;background:#ffe066;color:#172033;font:inherit;font-weight:950;cursor:pointer}.stage{position:relative;min-height:0}.stage canvas{display:block;width:100%;height:100%;background:#d8b47a}.hint{text-align:center;padding:8px;background:#172033;color:#fff;font-size:13px;font-weight:750}.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#101827aa}.panel{width:min(88%,440px);padding:28px;border:4px solid #172033;border-radius:24px;background:#fff5dc;color:#172033;text-align:center;box-shadow:0 12px 0 #172033}.panel h1{margin:0 0 10px;font-size:clamp(28px,7vw,52px)}.panel p{margin:8px 0 20px;line-height:1.45}.hidden{display:none!important}@media(max-width:560px){.hud{font-size:12px;padding:8px;gap:5px}.hud span{padding:6px}.hud span:nth-child(3){display:none}.hint{font-size:11px}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="hud"><span>Score: <b id="score">0</b></span><span>Best: <b id="best">0</b></span><span>Power: <b id="power">1</b></span><button id="pause">Pause</button></div>
+  <div class="stage"><canvas id="game" aria-label="Number Blaster game"></canvas><section id="overlay" class="overlay hidden"><div class="panel"><h1 id="title">Number Blaster</h1><p id="message"></p><button id="playAgain">Play Again</button></div></section></div>
+  <div class="hint">Move with A/D or ◀/▶ · Tap or drag on phones · Shoot the numbered crates</div>
+</main>
+<script>
+const CONFIG={
+  playerSpeed:420, // Player movement speed.
+  bulletSpeed:560, // Bullet travel speed.
+  fireEvery:260, // Time between player shots.
+  spawnEvery:850, // Time between new crates.
+  crateSpeed:58, // Starting crate speed.
+  crateHealth:3, // Starting crate number.
+  healthGrowth:0.18, // Extra crate health over time.
+  speedGrowth:0.018, // Extra crate speed over time.
+  maxCrates:18, // Performance guard.
+  hitScore:5, // Score for damaging a crate.
+  breakScore:25, // Score for breaking a crate.
+  boostEvery:9000, // Time between power boosts.
+  boostPower:1 // Power added by a boost.
+};
+const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),scoreEl=document.querySelector('#score'),bestEl=document.querySelector('#best'),powerEl=document.querySelector('#power'),pauseBtn=document.querySelector('#pause'),overlay=document.querySelector('#overlay'),titleEl=document.querySelector('#title'),messageEl=document.querySelector('#message'),playAgain=document.querySelector('#playAgain');
+let W=900,H=700,dpr=1,last=0,running=false,paused=false,score=0,best=Number(localStorage.getItem('numberBlasterBest')||0),power=1,elapsed=0,spawnTimer=0,fireTimer=0,boostTimer=0,keys={},crates=[],bullets=[],boosts=[],player={x:450,y:620,r:18};
+bestEl.textContent=best;
+function fit(){const box=canvas.getBoundingClientRect();dpr=Math.min(2,devicePixelRatio||1);W=box.width;H=box.height;canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);player.y=H-62;player.x=Math.max(24,Math.min(W-24,player.x));}
+function reset(){score=0;power=1;elapsed=0;spawnTimer=0;fireTimer=0;boostTimer=CONFIG.boostEvery;crates=[];bullets=[];boosts=[];player.x=W/2;running=true;paused=false;pauseBtn.textContent='Pause';overlay.classList.add('hidden');hud();}
+function hud(){scoreEl.textContent=score;bestEl.textContent=best;powerEl.textContent=power;}
+function spawnCrate(){if(crates.length>=CONFIG.maxCrates)return;const lane=Math.floor(Math.random()*5),x=W*(.12+lane*.19),hp=Math.max(2,Math.floor(CONFIG.crateHealth+elapsed/1000*CONFIG.healthGrowth+Math.random()*3));crates.push({x,y:-38,w:70,h:52,hp,maxHp:hp,speed:CONFIG.crateSpeed+elapsed/1000*CONFIG.speedGrowth*100});}
+function shoot(){bullets.push({x:player.x,y:player.y-20,r:5,vy:-CONFIG.bulletSpeed});if(bullets.length>80)bullets.splice(0,20);}
+function end(){running=false;if(score>best){best=score;localStorage.setItem('numberBlasterBest',best)}titleEl.textContent='Run Over';messageEl.textContent=`You scored ${score}. Break more crates and try to beat your best score.`;overlay.classList.remove('hidden');hud();}
+function update(dt){if(!running||paused)return;elapsed+=dt*1000;spawnTimer-=dt*1000;fireTimer-=dt*1000;boostTimer-=dt*1000;if(spawnTimer<=0){spawnTimer=CONFIG.spawnEvery/Math.min(2.2,1+elapsed/30000);spawnCrate()}if(fireTimer<=0){fireTimer=CONFIG.fireEvery/Math.min(2,1+power*.08);shoot()}if(boostTimer<=0){boostTimer=CONFIG.boostEvery;boosts.push({x:35+Math.random()*(W-70),y:-30,r:14})}
+  const dir=(keys.a||keys.arrowleft?-1:0)+(keys.d||keys.arrowright?1:0);player.x=Math.max(25,Math.min(W-25,player.x+dir*CONFIG.playerSpeed*dt));
+  for(const b of bullets)b.y+=b.vy*dt;bullets=bullets.filter(b=>b.y>-30);
+  for(const c of crates){c.y+=c.speed*dt;if(c.y+c.h/2>player.y-15&&Math.abs(c.x-player.x)<42){end();return}}
+  for(const b of bullets)for(const c of crates)if(!b.hit&&!c.hit&&Math.abs(b.x-c.x)<c.w/2&&Math.abs(b.y-c.y)<c.h/2){b.hit=true;c.hp-=power;score+=CONFIG.hitScore;if(c.hp<=0){c.hit=true;score+=CONFIG.breakScore;}}
+  crates=crates.filter(c=>!c.hit&&c.y<H+70);for(const p of boosts)p.y+=CONFIG.crateSpeed*dt*.8;for(const p of boosts)if(Math.hypot(p.x-player.x,p.y-player.y)<30){p.hit=true;power+=CONFIG.boostPower;score+=15}boosts=boosts.filter(p=>!p.hit&&p.y<H+30);hud();}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#d8b47a';ctx.fillRect(0,0,W,H);ctx.fillStyle='#c69a60';for(let x=0;x<W;x+=90){ctx.fillRect(x,0,3,H);ctx.fillRect(x+42,0,2,H)}ctx.fillStyle='#9e774b';ctx.fillRect(0,H-35,W,35);for(let x=25;x<W;x+=75){ctx.fillStyle='#6b4328';ctx.fillRect(x,H-30,6,25)}
+  for(const p of boosts){ctx.fillStyle='#ffe066';ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#172033';ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillText('+',p.x,p.y+6)}
+  for(const c of crates){ctx.save();ctx.translate(c.x,c.y);ctx.fillStyle='#70462d';ctx.strokeStyle='#342416';ctx.lineWidth=4;ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h);ctx.strokeRect(-c.w/2,-c.h/2,c.w,c.h);ctx.fillStyle='#fff5dc';ctx.font='bold 28px system-ui';ctx.textAlign='center';ctx.fillText(c.hp,0,10);ctx.restore();ctx.fillStyle='#172033';ctx.fillRect(c.x-c.w/2,c.y-c.h/2-10,c.w,5);ctx.fillStyle='#55d66b';ctx.fillRect(c.x-c.w/2,c.y-c.h/2-10,c.w*Math.max(0,c.hp/c.maxHp),5)}
+  for(const b of bullets){ctx.fillStyle='#fff4bd';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();}
+  ctx.save();ctx.translate(player.x,player.y);ctx.fillStyle='#12b886';ctx.beginPath();ctx.arc(0,0,player.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ff5c62';ctx.fillRect(-10,-10,20,16);ctx.fillStyle='#172033';ctx.fillRect(-5,-28,10,22);ctx.restore();}
+function loop(t){const dt=Math.min(.04,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}
+window.addEventListener('resize',fit);window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key===' '){e.preventDefault();paused=!paused;pauseBtn.textContent=paused?'Resume':'Pause'}});window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);pauseBtn.onclick=()=>{if(running){paused=!paused;pauseBtn.textContent=paused?'Resume':'Pause'}};let drag=false;canvas.addEventListener('pointerdown',e=>{drag=true;player.x=e.offsetX});canvas.addEventListener('pointermove',e=>{if(drag)player.x=e.offsetX});window.addEventListener('pointerup',()=>drag=false);playAgain.onclick=reset;fit();reset();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
