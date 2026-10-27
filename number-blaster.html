@@ -13,11 +13,11 @@ const CONFIG={
   playerSpeed:430, // Side-to-side movement speed.
   bulletSpeed:620, // Speed of each shot.
   fireEvery:230, // Automatic fire interval.
-  targetEvery:1250, // Time between crystal rows.
+  targetEvery:2600, // Time between small crystal groups.
   targetStart:3, // Starting number on wooden targets.
   targetGrowth:.10, // Target number growth as the run continues.
   targetSpeed:72, // Target movement toward the player.
-  maxTargets:12, // Keeps the road readable instead of filling it with crystals.
+  maxTargets:5, // Keeps only a few crystals visible at once.
   targetWidth:74, // Barrel width.
   hitPoints:5, // Points for each hit.
   breakPoints:30, // Points for breaking a barrel.
@@ -33,7 +33,7 @@ function fit(){const r=canvas.getBoundingClientRect();W=r.width;H=r.height;dpr=M
 function reset(){score=0;squad=1;road=0;spawnTimer=200;fireTimer=0;gateTimer=CONFIG.gateEvery;hordeTimer=CONFIG.hordeEvery;shots=[];targets=[];gates=[];horde=[];sparkles=[];paused=false;running=true;pauseBtn.textContent='Pause';modal.classList.add('hide');fit();hud()}
 function hud(){scoreEl.textContent=score;squadEl.textContent=squad;roadEl.textContent=Math.floor(road)+'m'}
 function laneX(lane){return W*(.18+lane*.16)}
-function makeRow(){if(targets.length>=CONFIG.maxTargets)return;const start=Math.floor(Math.random()*3),count=2+Math.floor(Math.random()*3),value=Math.max(2,Math.floor(CONFIG.targetStart+road*CONFIG.targetGrowth/10));for(let i=0;i<count;i++){const lane=(start+i)%5;targets.push({x:laneX(lane),y:-60-i*10,n:value+Math.floor(Math.random()*3),max:value+2,w:CONFIG.targetWidth,h:54,hit:false})}}
+function makeRow(){if(targets.length>=CONFIG.maxTargets)return;const start=Math.floor(Math.random()*4),count=1+Math.floor(Math.random()*2),value=Math.max(2,Math.floor(CONFIG.targetStart+road*CONFIG.targetGrowth/10));for(let i=0;i<count;i++){const lane=(start+i)%5;targets.push({x:laneX(lane),y:-60-i*10,n:value+Math.floor(Math.random()*3),max:value+2,w:CONFIG.targetWidth,h:54,hit:false})}}
 function makeGate(){const choices=[{label:'+50',type:'add',value:50},{label:'x2',type:'mult',value:2},{label:'-10',type:'add',value:-10}];gates.push({x:laneX(Math.floor(Math.random()*5)),y:-80,w:105,h:58,choice:choices[Math.floor(Math.random()*choices.length)],hit:false})}
 function startHorde(){for(let i=0;i<CONFIG.hordeSize;i++)horde.push({x:laneX(Math.floor(Math.random()*5)),y:-40-i*35,r:17,hp:2+Math.floor(road/400),hit:false})}
 function fire(){shots.push({x:player.x,y:player.y-35,vy:-CONFIG.bulletSpeed});if(shots.length>90)shots.splice(0,20)}
