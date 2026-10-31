@@ -132,7 +132,7 @@ maxActiveEnemies:45, maxFriendlyBullets:260, // Keeps the endless horde readable
   endlessHorde:true, // Keep normal hordes spawning instead of ending after one small wave.
   boulderSpacing:500, // Distance between paired side boulders.
   boulderStartHits:5, // Bullets needed to break a starting boulder.
-  powerUpAmount:1, // Power gained from a broken-boulder power-up.
+  powerUpAmount:.25, // Smaller power boost so one pickup cannot overwhelm the run.
   troopFireMs:450, // How often troops fire automatically.
   troopBaseDamage:2, // Base damage from each regular troop shot.
   bulletKnockback:18, // Distance normal bullets push enemies backward.
@@ -252,7 +252,7 @@ function damageSquad(damage){if(game.shields.length){const shield=game.shields[0
   for(const b of game.bullets){if(b.vx){b.x+=b.vx*dt;b.y+=b.vy*dt;}else b.y-=CONFIG.bulletSpeed*dt;b.age+=dt*1000;}
   for(const b of game.bullets)for(const g of game.gates)if(!b.hit&&!g.hit&&Math.hypot(b.x-g.x,b.y-g.y)<88){b.hit=true;g.amount+=CONFIG.gateBulletStep;game.score+=2;toastMsg(`Gate multiplier: ${g.amount>0?`+${g.amount}`:g.amount}`);}
   for(const g of game.gates){g.y+=CONFIG.runSpeed*dt;if(!g.counted&&g.y>game.squadY+30){g.counted=true;game.gatesPassed++;if(game.gatesPassed===CONFIG.safeMultiplierCount)toastMsg('The horde is arriving!');}if(!g.hit&&g.y>game.squadY-35&&g.y<game.squadY+30&&Math.abs(g.x-game.laneX)<85){g.hit=true;if(!g.counted){g.counted=true;game.gatesPassed++;if(game.gatesPassed===CONFIG.safeMultiplierCount)toastMsg('The horde is arriving!');}applyGateAmount(g.amount);game.score+=10;toastMsg(`Gate applied: ${g.amount>0?`+${g.amount}`:g.amount} troops`);}}
-  for(const rock of game.boulders)rock.y+=CONFIG.runSpeed*dt;
+  for(const rock of game.boulders){rock.y+=CONFIG.runSpeed*dt;if(!rock.troopHit&&rock.y>=game.squadY+CONFIG.frontRowOffset-42&&rock.y<=game.squadY+CONFIG.frontRowOffset+32){const hitIndices=[];for(let i=0;i<game.troopTiers.length;i++){const p=troopPosition(i);if(Math.hypot(p.x-rock.x,p.y-rock.y)<rock.r+14)hitIndices.push(i)}if(hitIndices.length){for(const i of hitIndices.sort((a,b)=>b-a))game.troopTiers.splice(i,1);rock.troopHit=true;syncArmy();toastMsg(`${hitIndices.length} troop${hitIndices.length===1?'':'s'} hit by a boulder`);}}}
   for(const powerup of game.powerups)powerup.y+=CONFIG.runSpeed*dt;
   for(const bullet of game.bullets)for(const rock of game.boulders)if(!bullet.hit&&!rock.hit&&Math.hypot(bullet.x-rock.x,bullet.y-rock.y)<rock.r+8){bullet.hit=true;rock.hp-=bullet.damage;if(rock.hp<=0){rock.hit=true;game.powerups.push({x:rock.x,y:rock.y,r:16});game.score+=15;toastMsg('Boulder broken! Power-up ahead');}}
   for(const powerup of game.powerups)if(!powerup.collected&&powerup.y>game.squadY-35&&powerup.y<game.squadY+30&&Math.abs(powerup.x-game.laneX)<100){powerup.collected=true;game.power+=CONFIG.powerUpAmount;game.score+=20;toastMsg(`Power-up collected! Power ${game.power}`);}
